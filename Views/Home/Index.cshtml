@@ -1,0 +1,122 @@
+﻿@{
+    ViewData["Title"] = "Retail chain"; // Sets the page title
+}
+
+<div class="text-center">
+    <!-- Main welcome heading -->
+    <h1 style="font-family: 'Times New Roman', Times, serif; color: black; font-size: 66px;">
+        Welcome to ABC Retailers
+    </h1>
+
+    <!-- Subheading / tagline -->
+    <p class="lead">ABC Retailer.</p>
+
+    <!-- Buttons to navigate to main sections -->
+    <div class="mt-4">
+        <!-- Customers page -->
+        <a class="btn m-2"
+           style="background-color: red; color: white; padding: 10px 20px; border: none; font-weight: bold"
+           asp-controller="Customer" asp-action="Index">
+            👥 View Customers
+        </a>
+
+        <!-- Orders page -->
+        <a class="btn m-2"
+           style="background-color: purple; color: white; padding: 10px 20px; border: none; font-weight: bold"
+           asp-controller="Order" asp-action="Index">
+            🛒 View Orders
+        </a>
+
+        <!-- Products page -->
+        <a class="btn m-2"
+           style="background-color: saddlebrown; color: white; padding: 10px 20px; border: none; font-weight: bold"
+           asp-controller="Product" asp-action="Index">
+            📦 View Products
+        </a>
+
+        <!-- Upload files page -->
+        <a class="btn m-2"
+           style="background-color: green; color: white; padding: 10px 20px; border: none; font-weight: bold"
+           asp-controller="Upload" asp-action="Index">
+            📤 Upload files
+        </a>
+    </div>
+
+    
+    <div>
+        <!-- Featured products heading -->
+        <h2 style="font-family: 'Times New Roman', Times, serif; color: black; font-size: 33px; text-align: left; margin-top: 40px;">
+            Featured Products
+        </h2>
+
+        <style>
+            .featured-products {
+                display: flex;
+                justify-content: space-between; /* Evenly spread across the page */
+                gap: 20px; /* Space between cards */
+                margin-top: 20px;
+            }
+
+            .product-card {
+                border: 1px solid #ccc;
+                padding: 10px;
+                text-align: center;
+                width: 250px; /* Fixed width for alignment */
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                box-sizing: border-box;
+            }
+
+                .product-card img {
+                    max-width: 100%;
+                    height: auto;
+                    margin-bottom: 10px;
+                }
+
+            .product-info {
+                display: flex;
+                flex-direction: column;
+                gap: 5px; /* space between name, stock, and price */
+                text-align: center;
+            }
+
+                .product-info p {
+                    margin: 0; /* remove default spacing so all align nicely */
+                }
+        </style>
+
+        <div class="featured-products">
+            <div class="product-card">
+                <img src="~/images/33.jpg" alt="Product 1" />
+                <div class="product-info">
+                    <p><strong>DEWALT 20V MAX Cordless Drill and Impact Driver</strong></p>
+                    <p>stock [25]</p>
+                    <p>$30.00</p>
+                </div>
+            </div>
+
+            <div class="product-card">
+                <img src="~/images/sweater.jpg" alt="Product 2" />
+                <div class="product-info">
+                    <p><strong>Nike sweater</strong></p>
+                    <p>stock [15]</p>
+                    <p>$10.00</p>
+                </div>
+            </div>
+
+            <div class="product-card">
+                <img src="~/images/81wwYRDv4nL._AC_SX466_.jpg" alt="Product 3" />
+                <div class="product-info">
+                    <p><strong>SHOWKOO Suitcase</strong></p>
+                    <p>stock [15]</p>
+                    <p>$170.99</p>
+                </div>
+            </div>
+        </div>
+
+
+
+
+</div>
+

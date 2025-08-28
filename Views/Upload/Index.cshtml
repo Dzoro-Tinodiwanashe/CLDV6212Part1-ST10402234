@@ -1,0 +1,25 @@
+﻿@model ABCRetailers.Models.FileUploadModel
+
+@{
+    ViewData["Title"] = "Upload Files";
+}
+
+<h2>@ViewData["Title"]</h2>
+
+@if (TempData["SuccessMessage"] != null)
+{
+    <p style="color:green">@TempData["SuccessMessage"]</p>
+}
+
+<form asp-action="Index" method="post" enctype="multipart/form-data">
+    <div class="form-group">
+        <label asp-for="ProofOfPayment">Select file:</label>
+        <input asp-for="ProofOfPayment" type="file" class="form-control" />
+        <span asp-validation-for="ProofOfPayment" class="text-danger"></span>
+    </div>
+    <button type="submit" class="btn btn-primary mt-2">Upload</button>
+</form>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

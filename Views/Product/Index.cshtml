@@ -1,0 +1,72 @@
+﻿@model IEnumerable<ABCRetailers.Models.Product>
+
+@{
+    ViewData["Title"] = "Products";
+}
+
+<h2>@ViewData["Title"]</h2>
+
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success">@TempData["SuccessMessage"]</div>
+}
+
+@if (TempData["ErrorMessage"] != null)
+{
+    <div class="alert alert-danger">@TempData["ErrorMessage"]</div>
+}
+
+<p>
+    <a asp-action="Create" class="btn btn-primary">Create New Product</a>
+</p>
+
+<table class="table table-striped table-bordered">
+    <thead>
+        <tr>
+            <th>Image</th>
+            <th>Product ID</th>
+            <th>@Html.DisplayNameFor(model => model.First().ProductName)</th>
+            <th>@Html.DisplayNameFor(model => model.First().Description)</th>
+            <th>@Html.DisplayNameFor(model => model.First().Price)</th>
+            <th>@Html.DisplayNameFor(model => model.First().StockAvailable)</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        @if (Model != null && Model.Any())
+        {
+            foreach (var item in Model)
+            {
+                <tr>
+                    <td>
+                        @if (!string.IsNullOrEmpty(item.ImageURL))
+                        {
+                            <img src="@item.ImageURL" alt="@item.ProductName" style="max-height: 80px;" />
+                        }
+                        else
+                        {
+                            <span>No Image</span>
+                        }
+                    </td>
+                    <td>@item.RowKey</td>
+                    <td>@item.ProductName</td>
+                    <td>@item.Description</td>
+                    <td>@item.Price.ToString("C")</td>
+                    <td>@item.StockAvailable</td>
+                    <td>
+                        <a asp-action="Edit" asp-route-id="@item.RowKey" class="btn btn-sm btn-warning" style="background-color: black; color: white;">Edit</a>
+                        <form asp-action="Delete" asp-route-rowKey="@item.RowKey" method="post" style="display:inline" onsubmit="return confirm('Are you sure you want to delete this product?');">
+                            <button type="submit" class="btn btn-sm btn-danger" style="background-color: black; color: white;">Delete</button>
+                        </form>
+                    </td>
+                </tr>
+            }
+        }
+        else
+        {
+            <tr>
+                <td colspan="7" class="text-center">No products found.</td>
+            </tr>
+        }
+    </tbody>
+</table>

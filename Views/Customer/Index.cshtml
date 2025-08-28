@@ -1,0 +1,46 @@
+﻿@model IEnumerable<ABCRetailers.Models.Customer>
+
+@{
+    ViewData["Title"] = "Customer List";
+}
+
+<div class="container">
+    <h2>@ViewData["Title"]</h2>
+
+    <!-- Simple search form -->
+    <form asp-action="Index" method="get" class="form-inline mb-3">
+        <input type="text" name="search" class="form-control mr-2" placeholder="Search by name or username" />
+        <button type="submit" class="btn btn-primary">Filter</button>
+    </form>
+
+    <!-- Button to create new customer -->
+    <a class="btn" href="@Url.Action("Create", "Customer")" style="background-color: black; color: white;">Create New Customer</a>
+
+    <!-- Customer table -->
+    <table class="table table-bordered mt-3">
+        <thead>
+            <tr>
+                <th>Customer ID</th>
+                <th>First Name</th>
+                <th>Last Name</th>
+                <th>Email</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var customer in Model)
+            {
+                <tr>
+                    <td>@customer.CustomerId</td>
+                    <td>@customer.Name</td>
+                    <td>@customer.Surname</td>
+                    <td>@customer.Email</td>
+                    <td>
+                        <a class="btn" href="@Url.Action("Edit", "Customer", new { rowKey = customer.RowKey })" style="background-color: black; color: white;">Edit</a>
+                        <a class="btn" href="@Url.Action("Delete", "Customer", new { rowKey = customer.RowKey })" style="background-color: black; color: white;">Delete</a>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>

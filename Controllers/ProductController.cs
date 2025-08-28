@@ -1,0 +1,203 @@
+﻿using ABCRetailers.Models;
+using ABCRetailers.Services;
+using Azure.Storage.Blobs;
+using Microsoft.AspNetCore.Mvc;
+using System.Text.Json;
+
+namespace ABCRetailers.Controllers
+{
+    public class ProductController : Controller
+    {
+        private readonly IAzureStorageService _storageService;
+        private readonly ILogger<ProductController> _logger;
+        private readonly BlobServiceClient _blobServiceClient;
+
+        public ProductController(
+            IAzureStorageService storageService,
+            ILogger<ProductController> logger,
+            BlobServiceClient blobServiceClient)
+        {
+            _storageService = storageService;
+            _logger = logger;
+            _blobServiceClient = blobServiceClient;
+        }
+
+        public async Task<IActionResult> Index()
+        {
+            var products = await _storageService.GetAllEntitiesAsync<Product>();
+            return View(products);
+        }
+
+        public IActionResult Create() => View();
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Create(Product product)
+        {
+            if (!ModelState.IsValid)
+                return View(product);
+
+            product.PartitionKey = "Product";
+            product.RowKey = Guid.NewGuid().ToString();
+
+            // 🔹 DEBUG: print the price coming from the form
+            Console.WriteLine($"[DEBUG] Create Product - Received Price: {product.Price}");
+            _logger.LogInformation("Create Product - Received Price: {Price}", product.Price);
+
+            try
+            {
+                if (product.ImageFile != null && product.ImageFile.Length > 0)
+                {
+                    product.ImageURL = await UploadImageAsync(product.ImageFile);
+
+                    var queuePayload = new
+                    {
+                        TransactionId = Guid.NewGuid().ToString(),
+                        Type = "ImageUploaded",
+                        ProductId = product.RowKey,
+                        FileName = Path.GetFileName(product.ImageURL),
+                        Timestamp = DateTime.UtcNow
+                    };
+
+                    string messageJson = JsonSerializer.Serialize(queuePayload);
+                    await _storageService.SendMessageAsync("order-notifications", messageJson);
+                }
+
+                await _storageService.AddEntityAsync(product);
+
+                TempData["SuccessMessage"] = "Product created successfully!";
+                return RedirectToAction(nameof(Index));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error creating product: {Message}", ex.Message);
+                ModelState.AddModelError("", "Failed to create product.");
+                return View(product);
+            }
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> Edit(string id)
+        {
+            if (string.IsNullOrEmpty(id))
+                return NotFound();
+
+            var product = await _storageService.GetEntityAsync<Product>("Product", id);
+            if (product == null)
+                return NotFound();
+
+            return View(product);
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Edit(Product product, string ETag)
+        {
+            if (!ModelState.IsValid)
+                return View(product);
+
+            // 🔹 DEBUG: print the price coming from the form
+            Console.WriteLine($"[DEBUG] Edit Product - Received Price: {product.Price}");
+            _logger.LogInformation("Edit Product - Received Price: {Price}", product.Price);
+
+            try
+            {
+                var existingProduct = await _storageService.GetEntityAsync<Product>("Product", product.RowKey);
+                if (existingProduct == null)
+                    return NotFound();
+
+                if (product.ImageFile != null && product.ImageFile.Length > 0)
+                {
+                    product.ImageURL = await UploadImageAsync(product.ImageFile);
+
+                    var queuePayload = new
+                    {
+                        TransactionId = Guid.NewGuid().ToString(),
+                        Type = "ImageReplaced",
+                        ProductId = product.RowKey,
+                        FileName = Path.GetFileName(product.ImageURL),
+                        Timestamp = DateTime.UtcNow
+                    };
+
+                    string messageJson = JsonSerializer.Serialize(queuePayload);
+                    await _storageService.SendMessageAsync("order-notifications", messageJson);
+                }
+                else
+                {
+                    product.ImageURL = existingProduct.ImageURL;
+                }
+
+                product.ETag = new Azure.ETag(ETag);
+                product.ImageFile = null;
+
+                await _storageService.UpdateEntityAsync(product);
+
+                TempData["SuccessMessage"] = "Product updated successfully!";
+                return RedirectToAction(nameof(Index));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error updating product: {Message}", ex.Message);
+                ModelState.AddModelError("", "Failed to update product.");
+                return View(product);
+            }
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Delete(string rowKey)
+        {
+            if (string.IsNullOrEmpty(rowKey))
+                return BadRequest();
+
+            try
+            {
+                await _storageService.DeleteEntityAsync<Product>("Product", rowKey);
+
+                var queuePayload = new
+                {
+                    TransactionId = Guid.NewGuid().ToString(),
+                    Type = "ProductDeleted",
+                    ProductId = rowKey,
+                    Timestamp = DateTime.UtcNow
+                };
+
+                string messageJson = JsonSerializer.Serialize(queuePayload);
+                await _storageService.SendMessageAsync("order-notifications", messageJson);
+
+                TempData["SuccessMessage"] = "Product deleted successfully!";
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error deleting product: {Message}", ex.Message);
+                TempData["ErrorMessage"] = "Failed to delete product.";
+            }
+
+            return RedirectToAction(nameof(Index));
+        }
+
+        private async Task<string> UploadImageAsync(IFormFile imageFile)
+        {
+            if (imageFile == null || imageFile.Length == 0)
+                return null;
+
+            var containerClient = _blobServiceClient.GetBlobContainerClient("product-images");
+            await containerClient.CreateIfNotExistsAsync(Azure.Storage.Blobs.Models.PublicAccessType.Blob);
+
+            var fileName = Guid.NewGuid().ToString() + Path.GetExtension(imageFile.FileName);
+            var blobClient = containerClient.GetBlobClient(fileName);
+
+            var headers = new Azure.Storage.Blobs.Models.BlobHttpHeaders
+            {
+                ContentType = imageFile.ContentType
+            };
+
+            using (var stream = imageFile.OpenReadStream())
+            {
+                await blobClient.UploadAsync(stream, headers);
+            }
+
+            return blobClient.Uri.ToString();
+        }
+    }
+}
