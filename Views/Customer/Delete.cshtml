@@ -26,8 +26,8 @@
     </dl>
 </div>
 
-<form asp-action="DeleteConfirmed" method="post">
-    <input type="hidden" asp-for="RowKey" /> <!-- Hidden field for Azure Table RowKey -->
+<form asp-action="Delete" method="post">
+    <input type="hidden" asp-for="RowKey" name="id" />
     <button type="submit" class="btn btn-danger">Delete</button>
     <a asp-action="Index" class="btn btn-secondary">Cancel</a>
 </form>

@@ -25,12 +25,16 @@ namespace ABCRetailers.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Index(FileUploadModel model)
         {
-            if (!ModelState.IsValid)
+            // Validate that a file was selected
+            if (!ModelState.IsValid || model.ProofOfPayment == null || model.ProofOfPayment.Length == 0)
+            {
+                ModelState.AddModelError("ProofOfPayment", "Please select a valid file to upload.");
                 return View(model);
+            }
 
             try
             {
-                // Upload the file to Azure File Share using existing method
+                // Upload the file safely to Azure File Share
                 var fileName = await _storageService.UploadToFileShareAsync(
                     model.ProofOfPayment, "contracts", "payments");
 
@@ -48,6 +52,12 @@ namespace ABCRetailers.Controllers
         // Download file using existing method
         public async Task<IActionResult> Download(string fileName)
         {
+            if (string.IsNullOrEmpty(fileName))
+            {
+                TempData["ErrorMessage"] = "Invalid file name.";
+                return RedirectToAction(nameof(Index));
+            }
+
             try
             {
                 var fileBytes = await _storageService.DownloadFromFileShareAsync(

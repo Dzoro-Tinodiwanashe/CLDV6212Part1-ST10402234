@@ -1,8 +1,9 @@
-﻿using ABCRetailers.Models;
-using ABCRetailers.Services;
-using Azure.Storage.Blobs;
-using Microsoft.AspNetCore.Mvc;
+﻿using System.Net.Http;
+using System.Text;
 using System.Text.Json;
+using ABCRetailers.Models;
+using ABCRetailers.Services;
+using Microsoft.AspNetCore.Mvc;
 
 namespace ABCRetailers.Controllers
 {
@@ -10,16 +11,15 @@ namespace ABCRetailers.Controllers
     {
         private readonly IAzureStorageService _storageService;
         private readonly ILogger<ProductController> _logger;
-        private readonly BlobServiceClient _blobServiceClient;
+        private readonly HttpClient _httpClient;
 
         public ProductController(
             IAzureStorageService storageService,
-            ILogger<ProductController> logger,
-            BlobServiceClient blobServiceClient)
+            ILogger<ProductController> logger)
         {
             _storageService = storageService;
             _logger = logger;
-            _blobServiceClient = blobServiceClient;
+            _httpClient = new HttpClient();
         }
 
         public async Task<IActionResult> Index()
@@ -63,11 +63,14 @@ namespace ABCRetailers.Controllers
                     await _storageService.SendMessageAsync("order-notifications", messageJson);
                 }
 
+                product.ImageFile = null;
+
                 await _storageService.AddEntityAsync(product);
 
                 TempData["SuccessMessage"] = "Product created successfully!";
                 return RedirectToAction(nameof(Index));
             }
+
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error creating product: {Message}", ex.Message);
@@ -127,8 +130,9 @@ namespace ABCRetailers.Controllers
                     product.ImageURL = existingProduct.ImageURL;
                 }
 
-                product.ETag = new Azure.ETag(ETag);
                 product.ImageFile = null;
+
+                product.ETag = new Azure.ETag(ETag);
 
                 await _storageService.UpdateEntityAsync(product);
 
@@ -181,23 +185,29 @@ namespace ABCRetailers.Controllers
             if (imageFile == null || imageFile.Length == 0)
                 return null;
 
-            var containerClient = _blobServiceClient.GetBlobContainerClient("product-images");
-            await containerClient.CreateIfNotExistsAsync(Azure.Storage.Blobs.Models.PublicAccessType.Blob);
+            using var memoryStream = new MemoryStream();
+            await imageFile.CopyToAsync(memoryStream);
 
-            var fileName = Guid.NewGuid().ToString() + Path.GetExtension(imageFile.FileName);
-            var blobClient = containerClient.GetBlobClient(fileName);
-
-            var headers = new Azure.Storage.Blobs.Models.BlobHttpHeaders
+            var payload = new
             {
-                ContentType = imageFile.ContentType
+                FileName = imageFile.FileName,
+                ContentBase64 = Convert.ToBase64String(memoryStream.ToArray())
             };
 
-            using (var stream = imageFile.OpenReadStream())
+            var json = JsonSerializer.Serialize(payload);
+            var content = new StringContent(json, Encoding.UTF8, "application/json");
+
+            var response = await _httpClient.PostAsync("http://localhost:7251/api/products/upload", content);
+
+            if (!response.IsSuccessStatusCode)
             {
-                await blobClient.UploadAsync(stream, headers);
+                var error = await response.Content.ReadAsStringAsync();
+                _logger.LogError("ProductFunction returned error: {StatusCode} - {Error}", response.StatusCode, error);
+                throw new HttpRequestException($"Error uploading image: {response.StatusCode}");
             }
 
-            return blobClient.Uri.ToString();
+            var imageUrl = await response.Content.ReadAsStringAsync();
+            return imageUrl;
         }
     }
 }

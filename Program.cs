@@ -28,6 +28,7 @@ app.UseRouting();
 
 app.UseAuthorization();
 
+// **Default MVC route, using 'id' as parameter**
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}");

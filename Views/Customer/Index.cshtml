@@ -36,8 +36,8 @@
                     <td>@customer.Surname</td>
                     <td>@customer.Email</td>
                     <td>
-                        <a class="btn" href="@Url.Action("Edit", "Customer", new { rowKey = customer.RowKey })" style="background-color: black; color: white;">Edit</a>
-                        <a class="btn" href="@Url.Action("Delete", "Customer", new { rowKey = customer.RowKey })" style="background-color: black; color: white;">Delete</a>
+                        <a class="btn" href="@Url.Action("Edit", "Customer", new { id = customer.RowKey })" style="background-color: black; color: white;">Edit</a>
+                        <a class="btn" href="@Url.Action("Delete", "Customer", new { id = customer.RowKey })" style="background-color: black; color: white;">Delete</a>
                     </td>
                 </tr>
             }

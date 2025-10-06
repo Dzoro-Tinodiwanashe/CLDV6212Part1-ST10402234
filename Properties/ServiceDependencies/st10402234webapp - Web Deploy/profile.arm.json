@@ -21,7 +21,7 @@
     },
     "resourceName": {
       "type": "string",
-      "defaultValue": "st10402234webapp",
+      "defaultValue": "st10402234Webapp",
       "metadata": {
         "description": "Name of the main resource to be created by this template."
       }
@@ -81,7 +81,7 @@
                   "metadata": [
                     {
                       "name": "CURRENT_STACK",
-                      "value": "dotnetcore"
+                      "value": "dotnet"
                     }
                   ]
                 }
