@@ -9,6 +9,7 @@
 <form asp-action="Edit" method="post">
     <div asp-validation-summary="All" class="text-danger"></div>
 
+    <input type="hidden" asp-for="PartitionKey" />
     <input type="hidden" asp-for="RowKey" />
     <input type="hidden" name="ETag" value="@Model.ETag.ToString()" />
 

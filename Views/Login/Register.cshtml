@@ -1,0 +1,46 @@
+﻿@model ABCRetailers.Models.ViewModels.RegisterViewModel
+@{
+    ViewData["Title"] = "Register";
+}
+
+<div class="d-flex justify-content-center align-items-center vh-100" style="background-color: #f5f5f5;">
+    <div class="card shadow-lg p-4" style="width: 450px; font-family: 'Times New Roman', Times, serif;">
+        <div class="text-center mb-4">
+            <h2 class="fw-bold text-dark">Create Account</h2>
+            <p class="text-muted">Join ABCRetailers and start shopping today.</p>
+        </div>
+
+        <form asp-action="Register" method="post">
+            <div class="mb-3">
+                <label asp-for="Username" class="form-label"></label>
+                <input asp-for="Username" class="form-control" placeholder="Choose a username" />
+                <span asp-validation-for="Username" class="text-danger"></span>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="Password" class="form-label"></label>
+                <input asp-for="Password" type="password" class="form-control" placeholder="Create a password" />
+                <span asp-validation-for="Password" class="text-danger"></span>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="Role" class="form-label"></label>
+                <select asp-for="Role" class="form-select">
+                    <option value="Customer">Customer</option>
+                    <option value="Admin">Admin</option>
+                </select>
+                <span asp-validation-for="Role" class="text-danger"></span>
+            </div>
+
+            <button type="submit" class="btn btn-dark w-100 fw-bold">Register</button>
+        </form>
+
+        <p class="text-center mt-3 text-muted">
+            Already have an account? <a asp-action="Index" class="text-dark fw-bold">Login here</a>
+        </p>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

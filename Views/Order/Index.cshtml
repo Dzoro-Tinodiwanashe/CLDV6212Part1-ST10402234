@@ -12,7 +12,10 @@
         <button type="submit" class="btn btn-primary">Filter</button>
     </form>
 
-    <a class="btn" href="@Url.Action("Create", "Order")" style="background-color: black; color: white;">Create New Order</a>
+    <a asp-controller="Order" asp-action="Create" class="btn" style="background-color: black; color: white;">
+        Create New Order
+    </a>
+
 
     <table class="table table-bordered mt-3">
         <thead>

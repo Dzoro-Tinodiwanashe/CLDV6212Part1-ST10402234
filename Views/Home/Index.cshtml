@@ -1,5 +1,8 @@
-﻿@{
+﻿@inject IHttpContextAccessor HttpContextAccessor
+
+@{
     ViewData["Title"] = "Retail chain"; // Sets the page title
+    var role = HttpContextAccessor.HttpContext?.Session.GetString("Role");
 }
 
 <div class="text-center">
@@ -10,6 +13,22 @@
 
     <!-- Subheading / tagline -->
     <p class="lead">ABC Retailer.</p>
+
+    <!-- Role-based dashboard buttons -->
+    @if (role == "Admin")
+    {
+        <a class="btn m-2" style="background-color: darkblue; color: white; padding: 10px 20px; border: none; font-weight: bold"
+           asp-action="AdminDashboard" asp-controller="Home">
+            🛠️ Admin Dashboard
+        </a>
+    }
+    else if (role == "Customer")
+    {
+        <a class="btn m-2" style="background-color: darkgreen; color: white; padding: 10px 20px; border: none; font-weight: bold"
+           asp-action="CustomerDashboard" asp-controller="Home">
+            👤 Customer Dashboard
+        </a>
+    }
 
     <!-- Buttons to navigate to main sections -->
     <div class="mt-4">
@@ -42,7 +61,7 @@
         </a>
     </div>
 
-    
+
     <div>
         <!-- Featured products heading -->
         <h2 style="font-family: 'Times New Roman', Times, serif; color: black; font-size: 33px; text-align: left; margin-top: 40px;">
@@ -52,8 +71,8 @@
         <style>
             .featured-products {
                 display: flex;
-                justify-content: space-between; /* Evenly spread across the page */
-                gap: 20px; /* Space between cards */
+                justify-content: space-between;
+                gap: 20px;
                 margin-top: 20px;
             }
 
@@ -61,7 +80,7 @@
                 border: 1px solid #ccc;
                 padding: 10px;
                 text-align: center;
-                width: 250px; /* Fixed width for alignment */
+                width: 250px;
                 display: flex;
                 flex-direction: column;
                 align-items: center;
@@ -77,12 +96,12 @@
             .product-info {
                 display: flex;
                 flex-direction: column;
-                gap: 5px; /* space between name, stock, and price */
+                gap: 5px;
                 text-align: center;
             }
 
                 .product-info p {
-                    margin: 0; /* remove default spacing so all align nicely */
+                    margin: 0;
                 }
         </style>
 
@@ -114,9 +133,5 @@
                 </div>
             </div>
         </div>
-
-
-
-
+    </div>
 </div>
-

@@ -16,157 +16,196 @@ namespace ABCRetailers.Controllers
             _logger = logger;
         }
 
+        // ========================
+        // INDEX
+        // ========================
         public async Task<IActionResult> Index()
         {
+            var role = HttpContext.Session.GetString("Role");
+            var username = HttpContext.Session.GetString("Username");
             var orders = await _storageService.GetAllEntitiesAsync<Order>();
+
+            if (role == "Customer")
+            {
+                // Only show this user's orders
+                orders = orders.Where(o => o.Username == username).ToList();
+            }
+
             return View(orders);
         }
 
+        // ========================
+        // CREATE (GET)
+        // ========================
         [HttpGet]
         public async Task<IActionResult> Create()
         {
-            ViewBag.Customers = await _storageService.GetAllEntitiesAsync<Customer>();
+            var role = HttpContext.Session.GetString("Role");
+            var username = HttpContext.Session.GetString("Username");
+
             ViewBag.Products = await _storageService.GetAllEntitiesAsync<Product>();
+            var allCustomers = await _storageService.GetAllEntitiesAsync<Customer>();
+
+            if (role == "Admin")
+            {
+                ViewBag.Customers = allCustomers;
+            }
+            else
+            {
+                // 🔹 FIXED: Match by Username, not Name
+                var customer = allCustomers.FirstOrDefault(c => c.Username == username);
+
+                if (customer == null)
+                {
+                    return Content("Customer record not found for the logged-in user.");
+                }
+
+                ViewBag.Customers = new List<Customer> { customer };
+            }
+
             return View();
         }
 
+        // ========================
+        // CREATE (POST)
+        // ========================
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(Order order)
         {
+            var role = HttpContext.Session.GetString("Role");
+            var username = HttpContext.Session.GetString("Username");
+
             if (!ModelState.IsValid)
             {
-                ViewBag.Customers = await _storageService.GetAllEntitiesAsync<Customer>();
                 ViewBag.Products = await _storageService.GetAllEntitiesAsync<Product>();
+                ViewBag.Customers = await _storageService.GetAllEntitiesAsync<Customer>();
                 return View(order);
             }
 
-            try
+            var allCustomers = await _storageService.GetAllEntitiesAsync<Customer>();
+            var allProducts = await _storageService.GetAllEntitiesAsync<Product>();
+
+            Customer customer;
+            if (role == "Admin")
             {
-                // Fetch product details
-                var product = await _storageService.GetEntityAsync<Product>("Product", order.ProductId);
-                if (product != null)
-                {
-                    order.ProductName = product.ProductName;
-
-                    // ✅ Use numeric Price field instead of PriceString
-                    order.UnitPrice = product.Price;
-                    order.TotalPrice = product.Price * order.Quantity;
-                }
-                else
-                {
-                    ModelState.AddModelError("ProductId", "Selected product not found.");
-                    ViewBag.Customers = await _storageService.GetAllEntitiesAsync<Customer>();
-                    ViewBag.Products = await _storageService.GetAllEntitiesAsync<Product>();
-                    return View(order);
-                }
-
-                // Fetch customer details
-                var customer = await _storageService.GetEntityAsync<Customer>("Customer", order.CustomerId);
-                if (customer != null)
-                {
-                    order.Username = customer.Name;
-                }
-                else
-                {
-                    ModelState.AddModelError("CustomerId", "Selected customer not found.");
-                    ViewBag.Customers = await _storageService.GetAllEntitiesAsync<Customer>();
-                    ViewBag.Products = await _storageService.GetAllEntitiesAsync<Product>();
-                    return View(order);
-                }
-
-                order.PartitionKey = "Order";
-                order.RowKey = Guid.NewGuid().ToString();
-
-                // Ensure OrderDate is UTC
-                order.OrderDate = DateTime.SpecifyKind(order.OrderDate, DateTimeKind.Utc);
-
-                await _storageService.AddEntityAsync(order);
-
-                // 🚀 Structured queue message
-                var queuePayload = new
-                {
-                    TransactionId = Guid.NewGuid().ToString(),
-                    Type = "OrderCreated",
-                    OrderId = order.RowKey,
-                    CustomerId = order.CustomerId,
-                    ProductId = order.ProductId,
-                    Quantity = order.Quantity,
-                    TotalPrice = order.TotalPrice,
-                    Timestamp = DateTime.UtcNow
-                };
-
-                string messageJson = JsonSerializer.Serialize(queuePayload);
-                await _storageService.SendMessageAsync("order-notifications", messageJson);
-
-                TempData["SuccessMessage"] = "Order created successfully!";
-                return RedirectToAction(nameof(Index));
+                customer = allCustomers.FirstOrDefault(c => c.RowKey == order.CustomerId);
             }
-            catch (Exception ex)
+            else
             {
-                _logger.LogError(ex, "Error creating order: {Message}", ex.Message);
-                ModelState.AddModelError("", "Failed to create order. Please try again.");
-                ViewBag.Customers = await _storageService.GetAllEntitiesAsync<Customer>();
-                ViewBag.Products = await _storageService.GetAllEntitiesAsync<Product>();
+                // 🔹 FIXED: Match by Username
+                customer = allCustomers.FirstOrDefault(c => c.Username == username);
+            }
+
+            if (customer == null)
+            {
+                ModelState.AddModelError("", "Customer record not found.");
+                ViewBag.Products = allProducts;
+                ViewBag.Customers = allCustomers;
                 return View(order);
             }
+
+            var product = allProducts.FirstOrDefault(p => p.RowKey == order.ProductId);
+            if (product == null)
+            {
+                ModelState.AddModelError("", "Product not found.");
+                ViewBag.Products = allProducts;
+                ViewBag.Customers = allCustomers;
+                return View(order);
+            }
+
+            // 🔹 Assign order details
+            order.PartitionKey = "Order";
+            order.RowKey = Guid.NewGuid().ToString();
+            order.OrderDate = DateTime.UtcNow;
+            order.ProductName = product.ProductName;
+            order.UnitPrice = product.Price;
+            order.TotalPrice = product.Price * order.Quantity;
+            order.CustomerId = customer.RowKey;
+            order.Username = username;
+            order.Status = "Submitted";
+
+            await _storageService.AddEntityAsync(order);
+            TempData["SuccessMessage"] = "Order created successfully!";
+            return RedirectToAction(nameof(Index));
         }
 
+        // ========================
+        // EDIT (GET)
+        // ========================
         [HttpGet]
         public async Task<IActionResult> Edit(string rowKey)
         {
-            if (string.IsNullOrEmpty(rowKey)) return NotFound();
+            if (string.IsNullOrEmpty(rowKey))
+                return NotFound();
 
             var order = await _storageService.GetEntityAsync<Order>("Order", rowKey);
-            if (order == null) return NotFound();
+            if (order == null)
+                return NotFound();
 
-            ViewBag.Customers = await _storageService.GetAllEntitiesAsync<Customer>();
+            var role = HttpContext.Session.GetString("Role");
+            var username = HttpContext.Session.GetString("Username");
+
+            if (role != "Admin" && order.Username != username)
+                return Unauthorized();
+
             ViewBag.Products = await _storageService.GetAllEntitiesAsync<Product>();
+            var allCustomers = await _storageService.GetAllEntitiesAsync<Customer>();
+
+            if (role == "Admin")
+            {
+                ViewBag.Customers = allCustomers;
+            }
+            else
+            {
+                var customer = allCustomers.FirstOrDefault(c => c.Username == username);
+                ViewBag.Customers = new List<Customer> { customer };
+            }
 
             return View(order);
         }
 
+        // ========================
+        // EDIT (POST)
+        // ========================
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(Order order, string ETag)
         {
+            var role = HttpContext.Session.GetString("Role");
+            var username = HttpContext.Session.GetString("Username");
+            var existingOrder = await _storageService.GetEntityAsync<Order>("Order", order.RowKey);
+
+            if (existingOrder == null)
+                return NotFound();
+
+            if (role != "Admin" && existingOrder.Username != username)
+                return Unauthorized();
+
             if (!ModelState.IsValid)
             {
-                ViewBag.Customers = await _storageService.GetAllEntitiesAsync<Customer>();
                 ViewBag.Products = await _storageService.GetAllEntitiesAsync<Product>();
+                ViewBag.Customers = await _storageService.GetAllEntitiesAsync<Customer>();
                 return View(order);
             }
 
-            try
+            var product = await _storageService.GetEntityAsync<Product>("Product", order.ProductId);
+            if (product != null)
             {
-                order.ETag = new Azure.ETag(ETag);
-
-                if (order.OrderDate != DateTime.MinValue)
-                    order.OrderDate = DateTime.SpecifyKind(order.OrderDate, DateTimeKind.Utc);
-
-                // ✅ Recalculate TotalPrice in case Quantity changed
-                var product = await _storageService.GetEntityAsync<Product>("Product", order.ProductId);
-                if (product != null)
-                {
-                    order.UnitPrice = product.Price;
-                    order.TotalPrice = product.Price * order.Quantity;
-                }
-
-                await _storageService.UpdateEntityAsync(order);
-
-                TempData["SuccessMessage"] = "Order updated successfully!";
-                return RedirectToAction(nameof(Index));
+                order.UnitPrice = product.Price;
+                order.TotalPrice = product.Price * order.Quantity;
             }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error updating order: {Message}", ex.Message);
-                ModelState.AddModelError("", "Failed to update order.");
-                ViewBag.Customers = await _storageService.GetAllEntitiesAsync<Customer>();
-                ViewBag.Products = await _storageService.GetAllEntitiesAsync<Product>();
-                return View(order);
-            }
+
+            order.ETag = new Azure.ETag(ETag);
+            await _storageService.UpdateEntityAsync(order);
+
+            TempData["SuccessMessage"] = "Order updated successfully!";
+            return RedirectToAction(nameof(Index));
         }
 
+        // ========================
+        // DELETE
+        // ========================
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Delete(string rowKey)
@@ -174,33 +213,24 @@ namespace ABCRetailers.Controllers
             if (string.IsNullOrEmpty(rowKey))
                 return BadRequest();
 
-            try
-            {
-                await _storageService.DeleteEntityAsync<Order>("Order", rowKey);
+            var order = await _storageService.GetEntityAsync<Order>("Order", rowKey);
+            if (order == null)
+                return NotFound();
 
-                // 🚀 Queue log for deletion
-                var queuePayload = new
-                {
-                    TransactionId = Guid.NewGuid().ToString(),
-                    Type = "OrderDeleted",
-                    OrderId = rowKey,
-                    Timestamp = DateTime.UtcNow
-                };
+            var role = HttpContext.Session.GetString("Role");
+            var username = HttpContext.Session.GetString("Username");
 
-                string messageJson = JsonSerializer.Serialize(queuePayload);
-                await _storageService.SendMessageAsync("order-notifications", messageJson);
+            if (role != "Admin" && order.Username != username)
+                return Unauthorized();
 
-                TempData["SuccessMessage"] = "Order deleted successfully!";
-                return RedirectToAction(nameof(Index));
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error deleting order: {Message}", ex.Message);
-                TempData["ErrorMessage"] = "Failed to delete order. Please try again.";
-                return RedirectToAction(nameof(Index));
-            }
+            await _storageService.DeleteEntityAsync<Order>("Order", rowKey);
+            TempData["SuccessMessage"] = "Order deleted successfully!";
+            return RedirectToAction(nameof(Index));
         }
 
+        // ========================
+        // DETAILS
+        // ========================
         [HttpGet]
         public async Task<IActionResult> Details(string rowKey)
         {
@@ -210,6 +240,12 @@ namespace ABCRetailers.Controllers
             var order = await _storageService.GetEntityAsync<Order>("Order", rowKey);
             if (order == null)
                 return NotFound();
+
+            var role = HttpContext.Session.GetString("Role");
+            var username = HttpContext.Session.GetString("Username");
+
+            if (role != "Admin" && order.Username != username)
+                return Unauthorized();
 
             return View(order);
         }

@@ -1,0 +1,42 @@
+﻿@model ABCRetailers.Models.ViewModels.LoginViewModel
+@{
+    ViewData["Title"] = "Login";
+}
+
+<div class="d-flex justify-content-center align-items-center vh-100" style="background-color: #f5f5f5;">
+    <div class="card shadow-lg p-4" style="width: 400px; font-family: 'Times New Roman', Times, serif;">
+        <div class="text-center mb-4">
+            <h2 class="fw-bold text-dark">ABCRetailers Login</h2>
+            <p class="text-muted">Welcome back! Please login to your account.</p>
+        </div>
+
+        @if (TempData["Message"] != null)
+        {
+            <div class="alert alert-success">@TempData["Message"]</div>
+        }
+
+        <form asp-action="Index" method="post">
+            <div class="mb-3">
+                <label asp-for="Username" class="form-label"></label>
+                <input asp-for="Username" class="form-control" placeholder="Enter your username" />
+                <span asp-validation-for="Username" class="text-danger"></span>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="Password" class="form-label"></label>
+                <input asp-for="Password" type="password" class="form-control" placeholder="Enter your password" />
+                <span asp-validation-for="Password" class="text-danger"></span>
+            </div>
+
+            <button type="submit" class="btn btn-dark w-100 fw-bold">Login</button>
+        </form>
+
+        <p class="text-center mt-3 text-muted">
+            Don't have an account? <a asp-action="Register" class="text-dark fw-bold">Register here</a>
+        </p>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

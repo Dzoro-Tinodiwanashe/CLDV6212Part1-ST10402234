@@ -1,6 +1,0 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<parameters>
-  <parameter name="IIS Web Application Name" description="" value="st10402234webapp" tags="IisApp">
-    <parameterEntry kind="ProviderPath" scope="IisApp" match="^C:\\Users\\lab_services_student\\Desktop\\CloudDevBpoe\\obj\\Release\\net9\.0\\PubTmp\\Out\\$" />
-  </parameter>
-</parameters>

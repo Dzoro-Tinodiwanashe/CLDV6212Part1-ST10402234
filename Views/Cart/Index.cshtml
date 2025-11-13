@@ -1,0 +1,92 @@
+﻿@model List<ABCRetailers.Models.ViewModels.CartItemViewModel>
+@inject IHttpContextAccessor HttpContextAccessor
+
+@{
+    ViewData["Title"] = "Cart";
+    var role = HttpContextAccessor.HttpContext?.Session.GetString("Role");
+}
+
+<div class="container mt-5">
+    @if (role == "Admin")
+    {
+        <h3>Administration Order Management</h3>
+    }
+    else
+    {
+        <h3>Your Cart</h3>
+    }
+
+    <h2 class="text-center mb-4">All Customer Orders</h2>
+
+    @if (TempData["Message"] != null)
+    {
+        <div class="alert alert-success text-center">@TempData["Message"]</div>
+    }
+
+    @if (Model == null || !Model.Any())
+    {
+        <div class="alert alert-info text-center">
+            Your cart is empty. Browse products to add some!
+        </div>
+    }
+    else
+    {
+        <table class="table table-striped table-bordered shadow-sm">
+            <thead class="table-dark text-center">
+                <tr>
+                    <th>Product ID</th>
+                    <th>Quantity</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody class="align-middle text-center">
+                @foreach (var item in Model)
+                {
+                    <tr>
+                        <td>@item.ProductId</td>
+                        <td>@item.Quantity</td>
+                        <td>
+                            <span class="badge
+                                        @(item.Status == "Complete" ? "bg-success" :
+                                                                    item.Status == "Pending" ? "bg-warning text-dark" :
+                                                                    "bg-secondary")">
+                        @item.Status
+                    </span>
+                </td>
+                <td>
+                    <div class="d-flex justify-content-center gap-2">
+                        @if (role == "Admin")
+                                {
+                                    <form asp-action="UpdateStatus" method="post" class="d-inline">
+                                        <input type="hidden" name="id" value="@item.Id" />
+                                        <select name="status" class="form-select form-select-sm w-auto d-inline">
+                                            <option value="Submitted" selected="@(item.Status == "Submitted")">Submitted</option>
+                                            <option value="Pending" selected="@(item.Status == "Pending")">Pending</option>
+                                            <option value="Complete" selected="@(item.Status == "Complete")">Complete</option>
+                                        </select>
+                                        <button type="submit" class="btn btn-sm btn-primary">Update</button>
+                                    </form>
+                                }
+
+                                <form asp-action="Remove" method="post" class="d-inline">
+                                    <input type="hidden" name="id" value="@item.Id" />
+                                    <button type="submit" class="btn btn-sm btn-danger">Remove</button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+
+        @if (role == "Customer")
+        {
+            <div class="text-center mt-4">
+                <a asp-action="Confirmation" class="btn btn-success btn-lg">
+                    ✅ Place Order
+                </a>
+            </div>
+        }
+    }
+</div>

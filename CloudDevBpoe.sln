@@ -5,6 +5,8 @@ VisualStudioVersion = 17.12.35707.178
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ABCRetailers", "ABCRetailers.csproj", "{61C6C19A-2438-4CB5-AFC6-F7A581926F5E}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FunctionRetailer", "..\FunctionRetailer\FunctionRetailer.csproj", "{429245E9-C100-D4D7-8925-77693F9641F6}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -15,8 +17,15 @@ Global
 		{61C6C19A-2438-4CB5-AFC6-F7A581926F5E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{61C6C19A-2438-4CB5-AFC6-F7A581926F5E}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{61C6C19A-2438-4CB5-AFC6-F7A581926F5E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{429245E9-C100-D4D7-8925-77693F9641F6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{429245E9-C100-D4D7-8925-77693F9641F6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{429245E9-C100-D4D7-8925-77693F9641F6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{429245E9-C100-D4D7-8925-77693F9641F6}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {CB8BC6D2-6828-4EF6-BB55-5663A4721A51}
 	EndGlobalSection
 EndGlobal

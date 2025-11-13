@@ -6,9 +6,9 @@ namespace ABCRetailers.Models
 {
     public class Customer : ITableEntity
     {
-        public string PartitionKey { get; set; } = "Customer";
+        public string PartitionKey { get; set; } = "CustomerPartition";
 
-            public string RowKey { get; set; } = Guid.NewGuid().ToString();
+        public string RowKey { get; set; } = Guid.NewGuid().ToString();
 
             public DateTimeOffset? Timestamp { get; set; }
 
